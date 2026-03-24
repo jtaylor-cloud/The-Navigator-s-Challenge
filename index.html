@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>⚓ The Navigator's Challenge</title>
+<link href="https://fonts.googleapis.com/css2?family=Pirata+One&family=Cinzel:wght@400;600;700&family=Spectral:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --deep:#04111e;--ocean:#0a2035;
+  --gold:#d4af37;--gold2:#f0cc55;
+  --parch:#f2e8d5;--sand:#c8a96e;
+  --red:#8b1a1a;--rope:#7a5230;--wood:#5a3010;
+  --text:#1a0e05;
+  --panel-border:rgba(212,175,55,0.3);
+}
+html,body{height:100%;overflow:hidden;background:var(--deep);font-family:'Spectral',serif;color:var(--parch)}
+body{display:flex;flex-direction:column;user-select:none}
+
+/* HEADER */
+#hdr{
+  background:linear-gradient(135deg,#020a12,#04111e 50%,#060d18);
+  border-bottom:2px solid var(--gold);
+  padding:8px 20px;display:flex;align-items:center;justify-content:space-between;
+  box-shadow:0 4px 24px rgba(0,0,0,.7);flex-shrink:0;z-index:10;position:relative;
+}
+.htitle{font-family:'Pirata One',cursive;font-size:26px;color:var(--gold2);
+  text-shadow:0 0 20px rgba(212,175,55,.5);letter-spacing:3px}
+.hsub{font-size:10px;color:var(--parch);opacity:.5;letter-spacing:4px;text-transform:uppercase;margin-top:1px}
+.hright{display:flex;align-items:center;gap:12px}
+#scorebadge{font-family:'Cinzel',serif;font-size:13px;color:var(--gold2);
+  background:rgba(212,175,55,.08);border:1px solid rgba(212,175,55,.2);
+  padding:5px 14px;border-radius:20px;letter-spacing:1px}
+#lvlbadge{font-family:'Pirata One',cursive;font-size:18px;
+  background:linear-gradient(135deg,#6b2f0a,#8b4513);
+  border:2px solid var(--gold);border-radius:22px;padding:5px 18px;color:var(--parch);
+  box-shadow:0 0 16px rgba(212,175,55,.25)}
+#restart-btn{font-family:'Cinzel',serif;font-size:11px;background:transparent;
+  border:1px solid rgba(212,175,55,.3);color:var(--gold);padding:5px 12px;
+  border-radius:14px;cursor:pointer;transition:all .2s;letter-spacing:.5px}
+#restart-btn:hover{background:rgba(212,175,55,.12);border-color:var(--gold)}
+
+/* MAIN */
+#main{display:flex;flex:1;overflow:hidden;min-height:0}
+
+/* CANVAS */
+#cw{position:relative;flex:1;overflow:hidden;background:var(--deep)}
+#ocean{display:block}
+#coord-label{
+  position:absolute;top:10px;left:10px;
+  background:rgba(2,10,18,.85);border:1px solid rgba(212,175,55,.25);
+  border-radius:6px;padding:4px 12px;
+  font-family:'Cinzel',serif;font-size:11px;color:var(--gold2);
+  pointer-events:none;letter-spacing:.5px}
+
+/* OVERLAY */
+#overlay{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  background:rgba(2,10,18,.75);backdrop-filter:blur(4px);z-index:30;
+}
+.ov-card{
+  background:linear-gradient(145deg,#04111e,#071826);
+  border:2px solid var(--gold);border-radius:16px;
+  padding:36px 44px;text-align:center;
+  box-shadow:0 0 60px rgba(212,175,55,.3),0 20px 60px rgba(0,0,0,.8);
+  max-width:460px;width:90%;animation:fadeIn .25s ease}
+.ov-title{font-family:'Pirata One',cursive;font-size:32px;color:var(--gold2);margin-bottom:12px;
+  text-shadow:0 0 20px rgba(212,175,55,.4)}
+.ov-body{font-size:15px;line-height:1.8;margin-bottom:24px;color:var(--parch)}
+.ov-body b{color:var(--gold2)}
+.ov-btn{padding:11px 34px;background:linear-gradient(135deg,var(--gold),var(--gold2));
+  border:none;border-radius:26px;font-family:'Pirata One',cursive;font-size:20px;
+  color:var(--text);cursor:pointer;transition:transform .15s,box-shadow .15s;
+  box-shadow:0 4px 20px rgba(212,175,55,.4)}
+.ov-btn:hover{transform:scale(1.06);box-shadow:0 6px 28px rgba(212,175,55,.6)}
+
+/* SIDEBAR */
+#sb{width:278px;flex-shrink:0;
+  background:linear-gradient(180deg,#030d17,#04111e);
+  border-left:2px solid var(--gold);
+  display:flex;flex-direction:column;overflow-y:auto;padding:11px;gap:9px}
+#sb::-webkit-scrollbar{width:4px}
+#sb::-webkit-scrollbar-thumb{background:rgba(212,175,55,.4);border-radius:2px}
+.pnl{background:linear-gradient(135deg,rgba(212,175,55,.06),rgba(0,0,0,.25));
+  border:1px solid var(--panel-border);border-radius:10px;padding:11px 13px}
+.pnl-t{font-family:'Pirata One',cursive;font-size:14px;color:var(--gold2);
+  border-bottom:1px solid rgba(212,175,55,.2);
+  padding-bottom:6px;margin-bottom:9px;text-align:center;letter-spacing:1px}
+
+/* Mission */
+#mission-text{font-size:13px;line-height:1.7;color:var(--parch)}
+#mission-text .pn{color:var(--gold2);font-weight:600;font-style:italic}
+#attempt-info{font-family:'Cinzel',serif;font-size:11px;color:var(--gold);margin-top:6px;text-align:center;min-height:16px}
+
+/* Triangle type */
+.tbts{display:flex;gap:8px}
+.tbt{flex:1;padding:8px 4px;background:rgba(4,17,30,.9);
+  border:2px solid rgba(212,175,55,.25);border-radius:8px;color:var(--parch);
+  font-family:'Spectral',serif;font-size:12px;cursor:pointer;transition:all .2s;text-align:center;line-height:1.45}
+.tbt:hover{border-color:rgba(212,175,55,.6);background:rgba(212,175,55,.1)}
+.tbt.on{border-color:var(--gold2);background:rgba(212,175,55,.18);color:var(--gold2)}
+.tbt small{font-size:10px;opacity:.75;font-style:italic}
+
+/* Scale */
+.scrow{display:flex;align-items:center;gap:12px;justify-content:center;margin-bottom:8px}
+.scbtn{width:32px;height:32px;border-radius:50%;
+  background:rgba(212,175,55,.12);border:1px solid var(--gold);
+  color:var(--gold2);font-size:20px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;transition:all .2s;line-height:1}
+.scbtn:hover{background:rgba(212,175,55,.3)}
+#scaleval{font-family:'Pirata One',cursive;font-size:28px;color:var(--gold2);min-width:38px;text-align:center}
+#tri-svg{width:100%;height:108px}
+
+/* Orientation */
+#orient-wrap{display:flex;flex-direction:column;gap:5px}
+.orient-row{display:flex;gap:6px;justify-content:center}
+.obt{width:58px;height:48px;background:rgba(4,17,30,.9);
+  border:1.5px solid rgba(212,175,55,.25);border-radius:7px;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  transition:all .18s;gap:2px}
+.obt:hover{border-color:rgba(212,175,55,.7);background:rgba(212,175,55,.1)}
+.obt.on{border-color:var(--gold2);background:rgba(212,175,55,.25)}
+.obt small{font-size:8px;color:var(--parch);opacity:.65;font-family:'Cinzel',serif;text-align:center;line-height:1.2}
+.og-lbl{font-size:9px;color:rgba(212,175,55,.55);font-family:'Cinzel',serif;text-align:center;letter-spacing:.5px;margin-bottom:1px}
+
+/* Vector */
+#vec-display{font-family:'Cinzel',serif;font-size:11px;color:var(--gold);
+  text-align:center;min-height:32px;line-height:1.6}
+
+/* Sail */
+#sail-btn{width:100%;padding:12px;
+  background:linear-gradient(135deg,#5a0a0a,#8b1a1a);
+  border:2px solid var(--gold);border-radius:10px;
+  color:var(--parch);font-family:'Pirata One',cursive;
+  font-size:20px;letter-spacing:2px;cursor:pointer;
+  transition:all .2s;box-shadow:0 4px 16px rgba(139,26,26,.4)}
+#sail-btn:hover:not(:disabled){
+  background:linear-gradient(135deg,#8b1a1a,#c0392b);
+  transform:translateY(-2px);box-shadow:0 8px 24px rgba(139,26,26,.6)}
+#sail-btn:disabled{opacity:.3;cursor:not-allowed;transform:none}
+
+/* Hint */
+#hint-text{font-style:italic;font-size:12px;color:var(--parch);opacity:.8;text-align:center;line-height:1.6}
+#hint-btn{display:block;width:100%;margin-top:7px;padding:6px;
+  background:transparent;border:1px solid rgba(212,175,55,.28);
+  border-radius:6px;color:var(--gold);font-family:'Cinzel',serif;
+  font-size:11px;cursor:pointer;transition:all .2s}
+#hint-btn:hover{background:rgba(212,175,55,.1);border-color:var(--gold)}
+
+/* Progress */
+.prog-row{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
+.pd{width:24px;height:24px;border-radius:50%;border:2px solid rgba(212,175,55,.25);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Cinzel',serif;font-size:9px;color:rgba(242,232,213,.35);transition:all .3s}
+.pd.done{background:linear-gradient(135deg,var(--gold),var(--gold2));border-color:var(--gold2);color:var(--text);font-weight:700}
+.pd.cur{border-color:var(--gold2);color:var(--gold2);animation:pdpulse 1.8s infinite}
+
+/* Ref */
+#ref-card{font-size:11px;line-height:1.8;color:var(--parch);opacity:.85}
+#ref-card b{color:var(--gold2)}
+
+@keyframes pdpulse{0%,100%{box-shadow:0 0 0 0 rgba(212,175,55,.5)}60%{box-shadow:0 0 0 6px rgba(212,175,55,0)}}
+@keyframes fadeIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
+</style>
+</head>
+<body>
+
+<div id="hdr">
+  <div>
+    <div class="htitle">⚓ The Navigator's Challenge</div>
+    <div class="hsub">Special Right Triangles · Maritime Academy</div>
+  </div>
+  <div class="hright">
+    <div id="scorebadge">⭐ Score: <span id="score-val">0</span></div>
+    <div id="lvlbadge">Voyage <span id="lvl-num">1</span> / 10</div>
+    <button id="restart-btn" onclick="restartGame()">↺ Restart</button>
+  </div>
+</div>
+
+<div id="main">
+  <div id="cw">
+    <canvas id="ocean"></canvas>
+    <div id="coord-label">🧭 x: 0, y: 0</div>
+    <div id="overlay">
+      <div class="ov-card">
+        <div class="ov-title" id="ov-title">⚓</div>
+        <div class="ov-body" id="ov-body"></div>
+        <button class="ov-btn" id="ov-btn" onclick="dismissOverlay()">Set Sail!</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="sb">
+    <div class="pnl">
+      <div class="pnl-t">📜 Current Voyage</div>
+      <div id="mission-text">Loading...</div>
+      <div id="attempt-info"></div>
+    </div>
+    <div class="pnl">
+      <div class="pnl-t">⛵ Triangle Type</div>
+      <div class="tbts">
+        <button class="tbt" id="btn45" onclick="setType('45')">45-45-90<br><small>x · x · x√2</small></button>
+        <button class="tbt" id="btn30" onclick="setType('30')">30-60-90<br><small>x · x√3 · 2x</small></button>
+      </div>
+    </div>
+    <div class="pnl">
+      <div class="pnl-t">📏 Scale Factor (x)</div>
+      <div class="scrow">
+        <button class="scbtn" onclick="chgScale(-1)">−</button>
+        <div id="scaleval">1</div>
+        <button class="scbtn" onclick="chgScale(1)">+</button>
+      </div>
+      <svg id="tri-svg" viewBox="0 0 220 108"></svg>
+    </div>
+    <div class="pnl">
+      <div class="pnl-t">🧭 Triangle Orientation</div>
+      <div id="orient-wrap"></div>
+      <div id="vec-display" style="margin-top:8px">Select a direction above</div>
+    </div>
+    <button id="sail-btn" onclick="doSail()" disabled>⚓ SET SAIL</button>
+    <div class="pnl">
+      <div class="pnl-t">🗺️ Captain's Hint</div>
+      <div id="hint-text">Choose your triangle type and direction to plot a course.</div>
+      <button id="hint-btn" onclick="showHint()">🔍 Reveal Hint</button>
+    </div>
+    <div class="pnl">
+      <div class="pnl-t">⚔️ Voyage Log</div>
+      <div class="prog-row" id="prog-row"></div>
+    </div>
+    <div class="pnl">
+      <div class="pnl-t">📐 Quick Reference</div>
+      <div id="ref-card">
+        <b>45-45-90:</b> both legs = x, hyp = x√2<br>
+        <b>30-60-90:</b> short = x, long = x√3, hyp = 2x<br>
+        <b>√2</b> ≈ 1.414 &nbsp;·&nbsp; <b>√3</b> ≈ 1.732
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+//  CONSTANTS
+// ═══════════════════════════════════════════
+const CV  = document.getElementById('ocean');
+const ctx = CV.getContext('2d');
+const CW  = document.getElementById('cw');
+const CELL = 60;
+const S2 = Math.SQRT2, S3 = Math.sqrt(3);
+
+// ═══════════════════════════════════════════
+//  PORTS  (grid coords, +x right, +y down)
+// ═══════════════════════════════════════════
+const PORTS = [
+  { id:0,  name:'Home Port',       emoji:'🏠', gx:0,        gy:0     },
+  { id:1,  name:'Lookout Point',   emoji:'🔭', gx:2,        gy:-2    },
+  { id:2,  name:'East Harbor',     emoji:'⚓', gx:5,        gy:1     },
+  { id:3,  name:'South Cove',      emoji:'🌊', gx:6,        gy:1+S3  },
+  { id:4,  name:'Southwest Bay',   emoji:'🐚', gx:6-2*S3,   gy:3+S3  },
+  { id:5,  name:'West Shoals',     emoji:'🪸', gx:3-2*S3,   gy:S3    },
+  { id:6,  name:'Northwest Rock',  emoji:'🪨', gx:1-2*S3,         gy:S3-2*S3        },
+  { id:7,  name:'North Star Port', emoji:'⭐', gx:3-2*S3,         gy:S3-2*S3-2      },
+  { id:8,  name:"Dragon's Cove",   emoji:'🐉', gx: 3+S3,          gy: -(S3+5)      },
+  { id:9,  name:'Mermaid Lagoon',  emoji:'🧜', gx: 3+3*S3,        gy: -(S3+3)      },
+  { id:10, name:'Treasure Island', emoji:'🏴‍☠️', gx: 3+S3,          gy: -(S3+1)      },
+];
+
+// ═══════════════════════════════════════════
+//  LEVELS
+// ═══════════════════════════════════════════
+const LEVELS = [
+  { n:1,  from:0, to:1,  title:"First Voyage",       triType:'45', scale:2, orient:'NE',
+    desc:"Navigate from <span class='pn'>Home Port</span> to <span class='pn'>Lookout Point</span>.",
+    hint:"Use <b>45-45-90</b>, x = <b>2</b>. Both legs = 2 units. Go <b>Right (+) and Up (−)</b> → ↗ NE." },
+  { n:2,  from:1, to:2,  title:"The Eastern Route",  triType:'45', scale:3, orient:'SE',
+    desc:"Sail from <span class='pn'>Lookout Point</span> to <span class='pn'>East Harbor</span>.",
+    hint:"Use <b>45-45-90</b>, x = <b>3</b>. Both legs = 3 units. Go <b>Right and Down</b> → ↘ SE." },
+  { n:3,  from:2, to:3,  title:"Into Southern Waters",triType:'30', scale:1, orient:'SR_LD',
+    desc:"Chart a course from <span class='pn'>East Harbor</span> to <span class='pn'>South Cove</span>.",
+    hint:"Use <b>30-60-90</b>, x = <b>1</b>. Short leg → Right (+1), Long leg ↓ Down (+√3). Button: →↓" },
+  { n:4,  from:3, to:4,  title:"The Western Passage", triType:'30', scale:2, orient:'LL_SD',
+    desc:"Steer from <span class='pn'>South Cove</span> to <span class='pn'>Southwest Bay</span>.",
+    hint:"Use <b>30-60-90</b>, x = <b>2</b>. Long leg ← Left (−2√3), Short leg ↓ Down (+2). Button: ⇐↓" },
+  { n:5,  from:4, to:5,  title:"Northward Bound",     triType:'45', scale:3, orient:'NW',
+    desc:"Plot a course from <span class='pn'>Southwest Bay</span> to <span class='pn'>West Shoals</span>.",
+    hint:"Use <b>45-45-90</b>, x = <b>3</b>. Both legs = 3. Go <b>Left and Up</b> → ↖ NW." },
+  { n:6,  from:5, to:6,  title:"Into Colder Waters",  triType:'30', scale:2, orient:'SL_LU',
+    desc:"Navigate from <span class='pn'>West Shoals</span> to <span class='pn'>Northwest Rock</span>.",
+    hint:"Use <b>30-60-90</b>, x = <b>2</b>. Short leg ← Left (−2), Long leg ↑ Up (−2√3). Button: ←↑" },
+  { n:7,  from:6, to:7,  title:"The Frozen North",    triType:'45', scale:2, orient:'NE',
+    desc:"Sail from <span class='pn'>Northwest Rock</span> to <span class='pn'>North Star Port</span>.",
+    hint:"Use <b>45-45-90</b>, x = <b>2</b>. Both legs = 2. Go <b>Right and Up</b> → ↗ NE." },
+  { n:8,  from:7, to:8,  title:"Dragon's Domain",     triType:'30', scale:3, orient:'LR_SU',
+    desc:"Chart a course from <span class='pn'>North Star Port</span> to <span class='pn'>Dragon's Cove</span>.",
+    hint:"Use <b>30-60-90</b>, x = <b>3</b>. Long leg → Right (+3√3), Short leg ↑ Up (−3). Button: ⇒↑" },
+  { n:9,  from:8, to:9,  title:"Mermaid's Call",      triType:'30', scale:2, orient:'LR_SD',
+    desc:"Navigate from <span class='pn'>Dragon's Cove</span> to <span class='pn'>Mermaid Lagoon</span>.",
+    hint:"Use <b>30-60-90</b>, x = <b>2</b>. Long leg → Right (+2√3), Short leg ↓ Down (+2). Button: ⇒↓" },
+  { n:10, from:9, to:10, title:"The Final Voyage",    triType:'30', scale:2, orient:'LL_SD',
+    desc:"The last journey — find <span class='pn'>Treasure Island</span> from <span class='pn'>Mermaid Lagoon</span>!",
+    hint:"Use <b>30-60-90</b>, x = <b>2</b>. Long leg ← Left (−2√3), Short leg ↓ Down (+2). Button: ⇐↓" },
+];
+
+// ═══════════════════════════════════════════
+//  ORIENTATION CONFIGS
+// ═══════════════════════════════════════════
+const ORIENTS_45 = [
+  { id:'NE', label:'↗', desc:'Right + Up',   dx:1,  dy:-1 },
+  { id:'SE', label:'↘', desc:'Right + Down', dx:1,  dy:1  },
+  { id:'SW', label:'↙', desc:'Left + Down',  dx:-1, dy:1  },
+  { id:'NW', label:'↖', desc:'Left + Up',    dx:-1, dy:-1 },
+];
+const ORIENTS_30 = [
+  { id:'SR_LD', label:'→↓', desc:'Short→ Long↓', dxT:'s', dxS:1,  dyT:'l', dyS:1  },
+  { id:'SR_LU', label:'→↑', desc:'Short→ Long↑', dxT:'s', dxS:1,  dyT:'l', dyS:-1 },
+  { id:'SL_LD', label:'←↓', desc:'Short← Long↓', dxT:'s', dxS:-1, dyT:'l', dyS:1  },
+  { id:'SL_LU', label:'←↑', desc:'Short← Long↑', dxT:'s', dxS:-1, dyT:'l', dyS:-1 },
+  { id:'LR_SD', label:'⇒↓', desc:'Long→ Short↓', dxT:'l', dxS:1,  dyT:'s', dyS:1  },
+  { id:'LR_SU', label:'⇒↑', desc:'Long→ Short↑', dxT:'l', dxS:1,  dyT:'s', dyS:-1 },
+  { id:'LL_SD', label:'⇐↓', desc:'Long← Short↓', dxT:'l', dxS:-1, dyT:'s', dyS:1  },
+  { id:'LL_SU', label:'⇐↑', desc:'Long← Short↑', dxT:'l', dxS:-1, dyT:'s', dyS:-1 },
+];
+
+function computeMove(triType,orient,scale){
+  if(triType==='45'){
+    const o=ORIENTS_45.find(x=>x.id===orient);
+    return o?{dx:o.dx*scale*CELL, dy:o.dy*scale*CELL}:null;
+  }else{
+    const o=ORIENTS_30.find(x=>x.id===orient);
+    if(!o) return null;
+    const sh=scale*CELL, lg=scale*S3*CELL;
+    return{dx:o.dxS*(o.dxT==='s'?sh:lg), dy:o.dyS*(o.dyT==='s'?sh:lg)};
+  }
+}
+
+// ═══════════════════════════════════════════
+//  GAME STATE
+// ═══════════════════════════════════════════
+let state={
+  level:0, shipGX:0, shipGY:0,
+  triType:'45', scale:1, orient:null,
+  completed:[], score:0, attempts:0,
+  animating:false, showPreview:false,
+  waveT:0, offsetX:0, offsetY:0, trail:[],
+};
+
+// ═══════════════════════════════════════════
+//  CANVAS / COORDS
+// ═══════════════════════════════════════════
+function resize(){
+  CV.width=CW.clientWidth; CV.height=CW.clientHeight;
+  computeOffset(); drawAll();
+}
+function computeOffset(){
+  const xs=PORTS.map(p=>p.gx*CELL), ys=PORTS.map(p=>p.gy*CELL);
+  const cx=(Math.min(...xs)+Math.max(...xs))/2;
+  const cy=(Math.min(...ys)+Math.max(...ys))/2;
+  state.offsetX=CV.width/2-cx; state.offsetY=CV.height/2-cy;
+}
+function toScreen(gx,gy){return{sx:gx*CELL+state.offsetX, sy:gy*CELL+state.offsetY}}
+
+// ═══════════════════════════════════════════
+//  DRAW OCEAN
+// ═══════════════════════════════════════════
+function drawOcean(){
+  const w=CV.width,h=CV.height;
+  const g=ctx.createRadialGradient(w/2,h/2,0,w/2,h/2,Math.max(w,h)*.8);
+  g.addColorStop(0,'#0d2f4a'); g.addColorStop(.5,'#091e33'); g.addColorStop(1,'#04111e');
+  ctx.fillStyle=g; ctx.fillRect(0,0,w,h);
+}
+
+function drawGrid(){
+  ctx.save();
+  const w=CV.width,h=CV.height;
+  const ox=((state.offsetX%CELL)+CELL)%CELL, oy=((state.offsetY%CELL)+CELL)%CELL;
+  ctx.strokeStyle='rgba(20,80,160,0.14)'; ctx.lineWidth=1;
+  for(let x=ox;x<w;x+=CELL){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke()}
+  for(let y=oy;y<h;y+=CELL){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke()}
+  ctx.strokeStyle='rgba(30,100,180,0.26)';
+  for(let x=ox;x<w;x+=CELL*5){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke()}
+  for(let y=oy;y<h;y+=CELL*5){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke()}
+  // Origin dashes
+  const{sx,sy}=toScreen(0,0);
+  ctx.strokeStyle='rgba(212,175,55,0.1)'; ctx.setLineDash([4,8]);
+  ctx.beginPath();ctx.moveTo(sx,0);ctx.lineTo(sx,h);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(0,sy);ctx.lineTo(w,sy);ctx.stroke();
+  ctx.setLineDash([]); ctx.restore();
+}
+
+function drawWaves(){
+  ctx.save(); ctx.globalAlpha=0.055; ctx.strokeStyle='#5db8e8'; ctx.lineWidth=1.5;
+  for(let row=0;row<CV.height;row+=38){
+    ctx.beginPath();
+    for(let x=0;x<=CV.width;x+=4){
+      const y=row+5*Math.sin((x+state.waveT)*0.022+row*0.01);
+      x===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+// ═══════════════════════════════════════════
+//  DRAW ISLANDS / PORTS
+// ═══════════════════════════════════════════
+function drawIsland(cx,cy,r,seed,isTreasure){
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx+3,cy+5,r+4,0,Math.PI*2);
+  ctx.fillStyle='rgba(0,0,0,0.3)'; ctx.fill();
+  const N=12;
+  ctx.beginPath();
+  for(let i=0;i<=N;i++){
+    const a=(i/N)*Math.PI*2;
+    const n=0.72+0.28*Math.sin(seed*6.7+i*2.9)*Math.cos(seed*2.8+i*1.7);
+    const x2=cx+r*n*Math.cos(a), y2=cy+r*n*Math.sin(a);
+    i===0?ctx.moveTo(x2,y2):ctx.lineTo(x2,y2);
+  }
+  ctx.closePath();
+  const sg=ctx.createRadialGradient(cx-r*.2,cy-r*.2,0,cx,cy,r);
+  sg.addColorStop(0,'#d4a86c'); sg.addColorStop(.55,'#b8904a'); sg.addColorStop(1,'#7a5a2a');
+  ctx.fillStyle=sg; ctx.fill();
+  ctx.strokeStyle='rgba(90,60,20,0.4)'; ctx.lineWidth=1; ctx.stroke();
+  // Vegetation
+  ctx.beginPath();
+  for(let i=0;i<=N;i++){
+    const a=(i/N)*Math.PI*2;
+    const n=0.48+0.18*Math.sin(seed*4.9+i*3.5);
+    const x2=cx+r*n*Math.cos(a), y2=cy+r*n*Math.sin(a);
+    i===0?ctx.moveTo(x2,y2):ctx.lineTo(x2,y2);
+  }
+  ctx.closePath();
+  const vg=ctx.createRadialGradient(cx,cy,0,cx,cy,r*.7);
+  vg.addColorStop(0,'rgba(60,140,80,0.7)'); vg.addColorStop(1,'rgba(30,90,50,0.4)');
+  ctx.fillStyle=vg; ctx.fill();
+  // Palm
+  if(r>20){
+    ctx.strokeStyle='#8b6914'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(cx,cy+r*.4); ctx.lineTo(cx+3,cy-r*.38); ctx.stroke();
+    ctx.fillStyle='rgba(45,130,60,0.85)';
+    for(let a=0;a<Math.PI*2;a+=Math.PI/3){
+      ctx.beginPath();
+      ctx.moveTo(cx+3,cy-r*.38);
+      ctx.lineTo(cx+3+12*Math.cos(a),cy-r*.38+8*Math.sin(a));
+      ctx.lineTo(cx+3+7*Math.cos(a+.35),cy-r*.38+5*Math.sin(a+.35));
+      ctx.closePath(); ctx.fill();
+    }
+  }
+  if(isTreasure){
+    ctx.strokeStyle='rgba(212,175,55,0.9)'; ctx.lineWidth=2.5;
+    ctx.beginPath(); ctx.moveTo(cx-8,cy-8); ctx.lineTo(cx+8,cy+8); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx+8,cy-8); ctx.lineTo(cx-8,cy+8); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawPort(port,isTarget,isHere){
+  const{sx,sy}=toScreen(port.gx,port.gy);
+  ctx.save();
+  const r=port.id===10?32:26;
+  drawIsland(sx,sy,r,port.id*1.618,port.id===10);
+  if(isTarget){
+    const p=0.4+0.6*Math.sin(Date.now()*.0035);
+    const gg=ctx.createRadialGradient(sx,sy,5,sx,sy,30);
+    gg.addColorStop(0,`rgba(240,204,85,${0.28*p})`); gg.addColorStop(1,'rgba(240,204,85,0)');
+    ctx.fillStyle=gg; ctx.beginPath(); ctx.arc(sx,sy,30,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(sx,sy,16+p*11,0,Math.PI*2);
+    ctx.strokeStyle=`rgba(240,204,85,${0.7*p})`; ctx.lineWidth=2; ctx.stroke();
+  }
+  ctx.beginPath(); ctx.arc(sx,sy,8,0,Math.PI*2);
+  ctx.fillStyle=isHere?'#f0cc55':isTarget?'#e8a020':'#8b6914';
+  ctx.fill(); ctx.strokeStyle=isHere?'#fff':isTarget?'#f0cc55':'rgba(212,175,55,.5)';
+  ctx.lineWidth=2; ctx.stroke();
+  ctx.font='13px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(port.emoji,sx,sy);
+  ctx.font=`${isTarget?'bold ':''} 10px Cinzel,serif`;
+  ctx.textAlign='center'; ctx.textBaseline='top';
+  ctx.fillStyle=isTarget?'#f0cc55':'rgba(212,175,55,.8)';
+  ctx.shadowColor='rgba(0,0,0,.9)'; ctx.shadowBlur=5;
+  ctx.fillText(port.name,sx,sy+11); ctx.shadowBlur=0;
+  ctx.restore();
+}
+
+// ═══════════════════════════════════════════
+//  DRAW SHIP
+// ═══════════════════════════════════════════
+function drawShip(gx,gy,alpha){
+  const{sx,sy}=toScreen(gx,gy);
+  ctx.save(); ctx.translate(sx,sy);
+  if(alpha!==undefined) ctx.globalAlpha=alpha;
+  ctx.shadowColor='rgba(0,0,0,.6)'; ctx.shadowBlur=12;
+  ctx.fillStyle='#5a3010';
+  ctx.beginPath(); ctx.moveTo(-15,5); ctx.lineTo(15,5); ctx.lineTo(11,13); ctx.lineTo(-11,13); ctx.closePath();
+  ctx.fill(); ctx.strokeStyle='#d4af37'; ctx.lineWidth=1.5; ctx.stroke();
+  ctx.fillStyle='#7a4520'; ctx.fillRect(-13,3,26,3);
+  ctx.shadowBlur=0;
+  ctx.strokeStyle='#c8a96e'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(0,5); ctx.lineTo(0,-20); ctx.stroke();
+  const sway=Math.sin(state.waveT*0.03)*2;
+  ctx.fillStyle='rgba(242,232,213,.92)';
+  ctx.beginPath(); ctx.moveTo(0,-18); ctx.quadraticCurveTo(14+sway,-8,12,3); ctx.lineTo(0,3); ctx.closePath();
+  ctx.fill(); ctx.strokeStyle='rgba(200,169,110,.6)'; ctx.lineWidth=1; ctx.stroke();
+  ctx.fillStyle='#8b1a1a';
+  ctx.beginPath(); ctx.moveTo(0,-20); ctx.lineTo(8,-15); ctx.lineTo(0,-11); ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+
+// ═══════════════════════════════════════════
+//  DRAW PREVIEW
+// ═══════════════════════════════════════════
+function drawPreview(gx,gy,dx,dy,valid){
+  const from=toScreen(gx,gy);
+  const destGX=gx+dx/CELL, destGY=gy+dy/CELL;
+  const to=toScreen(destGX,destGY);
+  const corner={sx:to.sx,sy:from.sy};
+  ctx.save();
+  // Triangle fill
+  ctx.beginPath(); ctx.moveTo(from.sx,from.sy); ctx.lineTo(corner.sx,corner.sy); ctx.lineTo(to.sx,to.sy); ctx.closePath();
+  ctx.fillStyle=valid?'rgba(80,220,120,0.1)':'rgba(220,100,60,0.1)'; ctx.fill();
+  // Legs
+  ctx.strokeStyle=valid?'rgba(80,220,120,0.7)':'rgba(220,100,60,0.7)';
+  ctx.lineWidth=2; ctx.setLineDash([6,4]); ctx.stroke(); ctx.setLineDash([]);
+  // Labels
+  ctx.fillStyle='#f0cc55'; ctx.font='bold 11px Spectral,serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  const absDx=(Math.abs(dx)/CELL).toFixed(2), absDy=(Math.abs(dy)/CELL).toFixed(2);
+  // Horizontal leg: show signed x (east = positive, west = negative)
+  ctx.fillText(`${dx>0?'+':'−'}${absDx}x`,(from.sx+corner.sx)/2,from.sy+(dy<0?12:-12));
+  // Vertical leg: negate so north is positive
+  ctx.fillText(`${dy<0?'+':'−'}${absDy}x`,corner.sx+(dx>0?24:-24),(corner.sy+to.sy)/2);
+  // Right angle
+  const sqSz=10;
+  ctx.strokeStyle='rgba(212,175,55,0.8)'; ctx.lineWidth=1.5;
+  ctx.strokeRect(corner.sx-(dx>0?sqSz:0),corner.sy-(dy>0?sqSz:0),dx>0?sqSz:-sqSz,dy>0?sqSz:-sqSz);
+  // Hypotenuse
+  ctx.strokeStyle=valid?'rgba(100,240,140,0.5)':'rgba(240,130,80,0.5)';
+  ctx.lineWidth=2; ctx.setLineDash([3,4]);
+  ctx.beginPath(); ctx.moveTo(from.sx,from.sy); ctx.lineTo(to.sx,to.sy); ctx.stroke(); ctx.setLineDash([]);
+  // Arrow
+  const ang=Math.atan2(to.sy-from.sy,to.sx-from.sx);
+  ctx.save(); ctx.translate(to.sx,to.sy); ctx.rotate(ang);
+  ctx.fillStyle=valid?'rgba(100,240,140,.9)':'rgba(240,130,80,.9)';
+  ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-14,-6); ctx.lineTo(-14,6); ctx.closePath(); ctx.fill();
+  ctx.restore();
+  // Ghost ship
+  drawShip(destGX,destGY,0.38);
+  ctx.restore();
+}
+
+function drawTrail(){
+  if(state.trail.length<2) return;
+  ctx.save(); ctx.strokeStyle='rgba(212,175,55,0.12)'; ctx.lineWidth=2; ctx.setLineDash([5,8]);
+  ctx.beginPath();
+  state.trail.forEach((pt,i)=>{const{sx,sy}=toScreen(pt.gx,pt.gy);i===0?ctx.moveTo(sx,sy):ctx.lineTo(sx,sy)});
+  ctx.stroke(); ctx.restore();
+}
+
+function drawCompass(){
+  const x=CV.width-58,y=CV.height-58,r=40;
+  ctx.save(); ctx.globalAlpha=.5;
+  ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2);
+  ctx.strokeStyle='rgba(212,175,55,.5)'; ctx.lineWidth=1.5; ctx.stroke();
+  [['N',0,'#e05050'],['E',90,'#d4af37'],['S',180,'#d4af37'],['W',270,'#d4af37']].forEach(([l,d,c])=>{
+    const rad=(d-90)*Math.PI/180;
+    ctx.beginPath();
+    ctx.moveTo(x+(r-8)*Math.cos(rad),y+(r-8)*Math.sin(rad));
+    ctx.lineTo(x+9*Math.cos(rad+.4),y+9*Math.sin(rad+.4));
+    ctx.lineTo(x+9*Math.cos(rad-.4),y+9*Math.sin(rad-.4));
+    ctx.closePath(); ctx.fillStyle=c; ctx.fill();
+    ctx.font='bold 10px Cinzel,serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillStyle='#f2e8d5';
+    ctx.fillText(l,x+(r+10)*Math.cos(rad),y+(r+10)*Math.sin(rad));
+  });
+  ctx.beginPath(); ctx.arc(x,y,5,0,Math.PI*2); ctx.fillStyle='#d4af37'; ctx.fill();
+  ctx.restore();
+}
+
+// ═══════════════════════════════════════════
+//  MAIN DRAW
+// ═══════════════════════════════════════════
+function drawAll(){
+  if(!CV.width) return;
+  drawOcean(); drawGrid(); drawWaves();
+  const lvl=LEVELS[state.level];
+  drawTrail();
+  PORTS.forEach(port=>{
+    const isTarget=port.id===lvl.to;
+    const isHere=Math.abs(port.gx-state.shipGX)<0.25&&Math.abs(port.gy-state.shipGY)<0.25;
+    drawPort(port,isTarget,isHere);
+  });
+  if(state.showPreview&&state.orient&&!state.animating){
+    const move=computeMove(state.triType,state.orient,state.scale);
+    if(move){
+      const tgt=PORTS[lvl.to];
+      const dGX=state.shipGX+move.dx/CELL, dGY=state.shipGY+move.dy/CELL;
+      const dist=Math.hypot(dGX-tgt.gx,dGY-tgt.gy)*CELL;
+      drawPreview(state.shipGX,state.shipGY,move.dx,move.dy,dist<50);
+    }
+  }
+  drawShip(state.shipGX,state.shipGY);
+  drawCompass();
+}
+
+// ═══════════════════════════════════════════
+//  TRIANGLE SVG
+// ═══════════════════════════════════════════
+function updateTriSVG(){
+  const svg=document.getElementById('tri-svg');
+  const x=state.scale;
+  const xS3=(x*S3).toFixed(2),x2=(x*2).toFixed(2),xS2=(x*S2).toFixed(2);
+  let c='';
+  if(state.triType==='45'){
+    c=`<polygon points="18,88 18,18 88,88" fill="rgba(212,175,55,.18)" stroke="#d4af37" stroke-width="1.8"/>
+    <rect x="18" y="76" width="12" height="12" fill="none" stroke="#d4af37" stroke-width="1.5"/>
+    <text x="53" y="102" fill="#f0cc55" font-size="12" text-anchor="middle" font-family="Spectral,serif" font-style="italic">x = ${x}</text>
+    <text x="6" y="55" fill="#f2e8d5" font-size="11" text-anchor="middle" font-family="Spectral,serif" font-style="italic">x = ${x}</text>
+    <text x="65" y="47" fill="#f2e8d5" font-size="11" text-anchor="middle" font-family="Spectral,serif" font-style="italic">x√2 = ${xS2}</text>
+    <text x="63" y="112" fill="#aaa" font-size="9" text-anchor="middle" font-family="Cinzel,serif">45°</text>
+    <text x="17" y="13" fill="#aaa" font-size="9" text-anchor="middle" font-family="Cinzel,serif">45°</text>
+    <line x1="148" y1="18" x2="148" y2="92" stroke="rgba(212,175,55,.3)" stroke-width="1"/>
+    <text x="184" y="35" fill="#f0cc55" font-size="11" text-anchor="middle" font-family="Spectral,serif" font-style="italic">legs: ${x}, ${x}</text>
+    <text x="184" y="52" fill="#f2e8d5" font-size="10" text-anchor="middle" font-family="Spectral,serif">hyp: ${xS2}</text>`;
+  }else{
+    c=`<polygon points="18,88 18,22 115,88" fill="rgba(212,175,55,.18)" stroke="#d4af37" stroke-width="1.8"/>
+    <rect x="18" y="76" width="12" height="12" fill="none" stroke="#d4af37" stroke-width="1.5"/>
+    <text x="66" y="102" fill="#f0cc55" font-size="12" text-anchor="middle" font-family="Spectral,serif" font-style="italic">x√3 = ${xS3}</text>
+    <text x="6" y="58" fill="#f2e8d5" font-size="11" text-anchor="middle" font-family="Spectral,serif" font-style="italic">x = ${x}</text>
+    <text x="82" y="47" fill="#f2e8d5" font-size="11" text-anchor="middle" font-family="Spectral,serif" font-style="italic">2x = ${x2}</text>
+    <text x="105" y="112" fill="#aaa" font-size="9" text-anchor="middle" font-family="Cinzel,serif">30°</text>
+    <text x="17" y="17" fill="#aaa" font-size="9" text-anchor="middle" font-family="Cinzel,serif">60°</text>
+    <line x1="148" y1="18" x2="148" y2="100" stroke="rgba(212,175,55,.3)" stroke-width="1"/>
+    <text x="184" y="35" fill="#f0cc55" font-size="11" text-anchor="middle" font-family="Spectral,serif" font-style="italic">short: ${x}</text>
+    <text x="184" y="52" fill="#f2e8d5" font-size="10" text-anchor="middle" font-family="Spectral,serif">long: ${xS3}</text>
+    <text x="184" y="68" fill="#f2e8d5" font-size="10" text-anchor="middle" font-family="Spectral,serif">hyp: ${x2}</text>`;
+  }
+  svg.innerHTML=c;
+}
+
+// ═══════════════════════════════════════════
+//  ORIENT BUTTONS
+// ═══════════════════════════════════════════
+function buildOrientButtons(){
+  const wrap=document.getElementById('orient-wrap'); wrap.innerHTML='';
+  if(state.triType==='45'){
+    const row=document.createElement('div'); row.className='orient-row';
+    ORIENTS_45.forEach(o=>row.appendChild(makeOBtn(o))); wrap.appendChild(row);
+  }else{
+    [['Short Leg Horizontal',ORIENTS_30.slice(0,4)],['Long Leg Horizontal',ORIENTS_30.slice(4,8)]].forEach(([lbl,grp])=>{
+      const g=document.createElement('div'); g.className='og-lbl'; g.textContent=lbl;
+      const row=document.createElement('div'); row.className='orient-row';
+      grp.forEach(o=>row.appendChild(makeOBtn(o)));
+      wrap.appendChild(g); wrap.appendChild(row);
+    });
+  }
+}
+function makeOBtn(o){
+  const btn=document.createElement('button');
+  btn.className='obt'+(state.orient===o.id?' on':'');
+  btn.title=o.desc;
+  btn.innerHTML=miniTriSVG(o)+`<small>${o.label}</small>`;
+  btn.addEventListener('click',()=>selectOrient(o.id));
+  return btn;
+}
+function miniTriSVG(o){
+  const W=40,H=32,s=2;
+  let pts='';
+  if(state.triType==='45'){
+    // NE: dx+,dy- ship=bottom-left, right-angle=bottom-right, dest=top-right
+    // SE: dx+,dy+ ship=top-left,    right-angle=top-right,    dest=bottom-right
+    // SW: dx-,dy+ ship=top-right,   right-angle=top-left,     dest=bottom-left
+    // NW: dx-,dy- ship=bottom-right,right-angle=bottom-left,  dest=top-left
+    switch(o.id){
+      case'NE':pts=`${s},${H-s} ${W-s},${H-s} ${W-s},${s}`;break;
+      case'SE':pts=`${s},${s} ${W-s},${s} ${W-s},${H-s}`;break;
+      case'SW':pts=`${W-s},${s} ${s},${s} ${s},${H-s}`;break;
+      case'NW':pts=`${W-s},${H-s} ${s},${H-s} ${s},${s}`;break;
+    }
+  }else{
+    const sh=Math.round((W-4)*.38),hs=Math.round((H-4)*.38);
+    // SR_LD: short-right, long-down  → right-angle at top-right(narrow)
+    // SR_LU: short-right, long-up    → right-angle at bottom-right(narrow)
+    // SL_LD: short-left,  long-down  → right-angle at top-left(narrow)
+    // SL_LU: short-left,  long-up    → right-angle at bottom-left(narrow)
+    // LR/LL already correct
+    switch(o.id){
+      case'SR_LD':pts=`${s},${s} ${s+sh},${s} ${s+sh},${H-s}`;break;
+      case'SR_LU':pts=`${s},${H-s} ${s+sh},${H-s} ${s+sh},${s}`;break;
+      case'SL_LD':pts=`${W-s},${s} ${W-s-sh},${s} ${W-s-sh},${H-s}`;break;
+      case'SL_LU':pts=`${W-s},${H-s} ${W-s-sh},${H-s} ${W-s-sh},${s}`;break;
+      case'LR_SD':pts=`${s},${s} ${W-s},${s} ${W-s},${s+hs}`;break;
+      case'LR_SU':pts=`${s},${H-s} ${W-s},${H-s} ${W-s},${H-s-hs}`;break;
+      case'LL_SD':pts=`${W-s},${s} ${s},${s} ${s},${s+hs}`;break;
+      case'LL_SU':pts=`${W-s},${H-s} ${s},${H-s} ${s},${H-s-hs}`;break;
+    }
+  }
+  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="display:block"><polygon points="${pts}" fill="rgba(212,175,55,.22)" stroke="#d4af37" stroke-width="1.4"/></svg>`;
+}
+
+// ═══════════════════════════════════════════
+//  UI
+// ═══════════════════════════════════════════
+function setType(t){
+  state.triType=t; state.orient=null; state.showPreview=false;
+  document.getElementById('btn45').classList.toggle('on',t==='45');
+  document.getElementById('btn30').classList.toggle('on',t==='30');
+  buildOrientButtons(); updateTriSVG(); updateVecDisplay(); updateSailBtn(); drawAll();
+}
+function chgScale(d){
+  state.scale=Math.max(1,Math.min(6,state.scale+d));
+  document.getElementById('scaleval').textContent=state.scale;
+  updateTriSVG(); updateVecDisplay();
+  if(state.orient) state.showPreview=true;
+  drawAll();
+}
+function selectOrient(id){
+  state.orient=id; state.showPreview=true;
+  buildOrientButtons(); updateVecDisplay(); updateSailBtn(); drawAll();
+}
+function updateVecDisplay(){
+  const el=document.getElementById('vec-display');
+  if(!state.orient){el.textContent='Select a direction above';return}
+  const move=computeMove(state.triType,state.orient,state.scale);
+  if(!move) return;
+  const dxU=(move.dx/CELL).toFixed(2), dyU=(-move.dy/CELL).toFixed(2);
+  const dispDy=-move.dy;
+  el.innerHTML=`Δx: <b style="color:#f0cc55">${move.dx>0?'+':''}${move.dx.toFixed(0)}px</b> &nbsp; Δy: <b style="color:#f0cc55">${dispDy>0?'+':''}${dispDy.toFixed(0)}px</b>
+  <br><span style="opacity:.65;font-size:10px">(${dxU>0?'+':''}${dxU} units, ${dyU>0?'+':''}${dyU} units)</span>`;
+}
+function updateSailBtn(){document.getElementById('sail-btn').disabled=!state.orient||state.animating}
+function showHint(){document.getElementById('hint-text').innerHTML=LEVELS[state.level].hint}
+
+// ═══════════════════════════════════════════
+//  LEVEL LOAD
+// ═══════════════════════════════════════════
+function loadLevel(){
+  const lvl=LEVELS[state.level];
+  document.getElementById('lvl-num').textContent=lvl.n;
+  document.getElementById('mission-text').innerHTML=`<b style="color:#f0cc55;font-family:Cinzel,serif">${lvl.title}</b><br><br>${lvl.desc}`;
+  document.getElementById('attempt-info').textContent='';
+  document.getElementById('hint-text').textContent='Use "Reveal Hint" if you get stuck!';
+  const start=PORTS[lvl.from];
+  state.shipGX=start.gx; state.shipGY=start.gy;
+  state.orient=null; state.showPreview=false; state.attempts=0;
+  state.trail=[{gx:start.gx,gy:start.gy}];
+  setType(lvl.triType);
+  state.scale=1;
+  document.getElementById('scaleval').textContent=state.scale;
+  updateTriSVG(); buildOrientButtons(); updateVecDisplay(); updateSailBtn(); buildProgress(); drawAll();
+}
+function buildProgress(){
+  const el=document.getElementById('prog-row'); el.innerHTML='';
+  LEVELS.forEach((lv,i)=>{
+    const dot=document.createElement('div');
+    dot.className='pd'+(state.completed.includes(i)?' done':i===state.level?' cur':'');
+    dot.textContent=lv.n; dot.title=lv.title; el.appendChild(dot);
+  });
+}
+function restartGame(){
+  state.level=0; state.score=0; state.completed=[]; state.trail=[];
+  document.getElementById('score-val').textContent='0';
+  loadLevel();
+}
+
+// ═══════════════════════════════════════════
+//  SAILING
+// ═══════════════════════════════════════════
+function doSail(){
+  if(state.animating) return;
+  const move=computeMove(state.triType,state.orient,state.scale);
+  if(!move) return;
+  const lvl=LEVELS[state.level];
+  const tgt=PORTS[lvl.to];
+  const destGX=state.shipGX+move.dx/CELL, destGY=state.shipGY+move.dy/CELL;
+  const dist=Math.hypot(destGX-tgt.gx,destGY-tgt.gy)*CELL;
+  state.attempts++;
+  if(dist<50){
+    animateSail(destGX,destGY,move.dx/CELL,move.dy/CELL,()=>{
+      state.trail.push({gx:destGX,gy:destGY});
+      const pts=Math.max(100,300-state.attempts*40);
+      state.score+=pts; document.getElementById('score-val').textContent=state.score;
+      if(!state.completed.includes(state.level)) state.completed.push(state.level);
+      if(state.level<LEVELS.length-1){
+        showOverlay('⚓ Port Reached!',
+          `Well done! You've arrived at <b>${tgt.name}</b> ${tgt.emoji}<br><br>
+           Triangle: <b>${state.triType==='45'?'45-45-90':'30-60-90'}</b>, scale x = <b>${state.scale}</b><br>
+           Points earned: <b>+${pts}</b> &nbsp;·&nbsp; Total: <b>${state.score}</b>`,
+          ()=>{state.level++;loadLevel()});
+        document.getElementById('ov-btn').textContent='Next Voyage →';
+      }else{
+        showOverlay('🏴‍☠️ Treasure Found!',
+          `Extraordinary! You've navigated all 10 voyages and discovered <b>Treasure Island</b>!<br><br>
+           ⭐ <b>Final Score: ${state.score}</b> ⭐<br><br>
+           You have mastered <b>Special Right Triangles!</b>`,
+          ()=>restartGame());
+        document.getElementById('ov-btn').textContent='⚓ Play Again';
+      }
+    });
+  }else{
+    const units=(dist/CELL).toFixed(1);
+    document.getElementById('attempt-info').innerHTML=`<span style="color:#e06060">✗ Off course by ~${units} units (attempt ${state.attempts})</span>`;
+    CW.style.boxShadow='0 0 50px rgba(200,50,50,.5) inset';
+    setTimeout(()=>{CW.style.boxShadow=''},500);
+    state.showPreview=true; drawAll();
+    if(state.attempts>=2) document.getElementById('hint-text').textContent='Stuck? Try "Reveal Hint" below!';
+  }
+}
+function animateSail(destGX,destGY,dgx,dgy,onDone){
+  state.animating=true; state.showPreview=false; updateSailBtn();
+  const sGX=state.shipGX,sGY=state.shipGY,dur=900,start=performance.now();
+  function step(now){
+    const t=Math.min(1,(now-start)/dur);
+    const e=t<.5?2*t*t:-1+(4-2*t)*t;
+    state.shipGX=sGX+dgx*e; state.shipGY=sGY+dgy*e; drawAll();
+    if(t<1) requestAnimationFrame(step);
+    else{state.shipGX=destGX;state.shipGY=destGY;state.animating=false;updateSailBtn();drawAll();onDone()}
+  }
+  requestAnimationFrame(step);
+}
+
+// ═══════════════════════════════════════════
+//  OVERLAY
+// ═══════════════════════════════════════════
+let _ovCb=null;
+function showOverlay(title,body,cb){
+  document.getElementById('ov-title').innerHTML=title;
+  document.getElementById('ov-body').innerHTML=body;
+  document.getElementById('overlay').style.display='flex';
+  _ovCb=cb;
+}
+function dismissOverlay(){
+  document.getElementById('overlay').style.display='none';
+  if(_ovCb){_ovCb();_ovCb=null}
+}
+
+// ═══════════════════════════════════════════
+//  ANIMATION LOOP
+// ═══════════════════════════════════════════
+let lastT=0;
+function animate(ts){
+  if(ts-lastT>40){state.waveT+=1.5;if(!state.animating) drawAll();lastT=ts}
+  requestAnimationFrame(animate);
+}
+
+CV.addEventListener('mousemove',e=>{
+  const r=CV.getBoundingClientRect();
+  const gx=((e.clientX-r.left-state.offsetX)/CELL).toFixed(1);
+  const gy=((e.clientY-r.top-state.offsetY)/CELL).toFixed(1);
+  document.getElementById('coord-label').textContent=`🧭 x: ${gx}, y: ${(-gy).toFixed(1)}`;
+});
+
+// ═══════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════
+window.addEventListener('resize',resize);
+resize(); state.trail=[];
+loadLevel();
+requestAnimationFrame(animate);
+
+setTimeout(()=>{
+  showOverlay('⚓ Welcome, Navigator!',
+    `Use <b>Special Right Triangles</b> to sail between ports and find Treasure Island!<br><br>
+     <b>1.</b> Pick a <b>Triangle Type</b> — 45-45-90 or 30-60-90<br>
+     <b>2.</b> Set the <b>Scale Factor</b> (the value of x)<br>
+     <b>3.</b> Choose an <b>Orientation</b> (direction the triangle faces)<br>
+     <b>4.</b> Click <b>⚓ SET SAIL</b> to navigate!<br><br>
+     <span style="color:var(--gold);font-style:italic">Your triangle will appear on the map so you can see where you're headed. Complete all 10 voyages to find the Treasure! 🏴‍☠️</span>`,
+    ()=>{});
+  document.getElementById('ov-btn').textContent='Set Sail!';
+},350);
+</script>
+</body>
+</html>
